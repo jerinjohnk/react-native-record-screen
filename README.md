@@ -73,7 +73,6 @@ RecordScreen.startRecording({
       mic: false,  
       videoBitRate: 1024 * 1024, // default value is 1000*1000
       videoFrameRate: 24, // default value is 20
-      isLandscape: true, // for ios Landscape orientation screen
   }).catch((error) =>
   console.error(error)
 );

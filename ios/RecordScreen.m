@@ -55,9 +55,8 @@ RCT_EXPORT_MODULE()
 
 RCT_EXPORT_METHOD(setup: (NSDictionary *)config)
 {
-    self.isLandscape = [RCTConvert BOOL: config[@"isLandscape"]];
-    self.screenWidth = self.isLandscape ?  [RCTConvert int: config[@"height"]] : [RCTConvert int: config[@"width"]];
-    self.screenHeight = self.isLandscape ? [RCTConvert int: config[@"width"]]: [RCTConvert int: config[@"height"]];
+    self.screenWidth = [RCTConvert int: config[@"width"]];
+    self.screenHeight = [RCTConvert int: config[@"height"]];
     self.enableMic = [RCTConvert BOOL: config[@"mic"]];
     if ([config objectForKey:@"videoBitRate"]!=nil )
     {
@@ -80,26 +79,26 @@ RCT_REMAP_METHOD(startRecording, resolve:(RCTPromiseResolveBlock)resolve rejecte
     if (self.screenRecorder.isRecording) {
         return;
     }
-    
+
     self.encounteredFirstBuffer = NO;
-    
+
     NSArray *pathDocuments = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *outputURL = pathDocuments[0];
 
     NSString *videoOutPath = [[outputURL stringByAppendingPathComponent:[NSString stringWithFormat:@"%u", arc4random() % 1000]] stringByAppendingPathExtension:@"mp4"];
-    
+
     NSError *error;
     self.writer = [AVAssetWriter assetWriterWithURL:[NSURL fileURLWithPath:videoOutPath] fileType:AVFileTypeMPEG4 error:&error];
     if (!self.writer) {
         NSLog(@"writer: %@", error);
         abort();
     }
-    
+
     AudioChannelLayout acl = { 0 };
     acl.mChannelLayoutTag = kAudioChannelLayoutTag_Mono;
     self.audioInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeAudio outputSettings:@{ AVFormatIDKey: @(kAudioFormatMPEG4AAC), AVSampleRateKey: @(44100),  AVChannelLayoutKey: [NSData dataWithBytes: &acl length: sizeof( acl ) ], AVEncoderBitRateKey: @(64000)}];
     self.micInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeAudio outputSettings:@{ AVFormatIDKey: @(kAudioFormatMPEG4AAC), AVSampleRateKey: @(44100),  AVChannelLayoutKey: [NSData dataWithBytes: &acl length: sizeof( acl ) ], AVEncoderBitRateKey: @(64000)}];
-    
+
     self.audioInput.preferredVolume = 0.0;
     self.micInput.preferredVolume = 0.0;
 
@@ -107,7 +106,7 @@ RCT_REMAP_METHOD(startRecording, resolve:(RCTPromiseResolveBlock)resolve rejecte
     NSLog(@"height: %d", [self adjustMultipleOf2:self.screenHeight]);
     NSLog(@"videoBitRate: %d", [self.videoBitRate intValue]);
     NSLog(@"videoFrameRate: %d", [self.videoFrameRate intValue]);
-    
+
     NSDictionary *compressionProperties = @{AVVideoProfileLevelKey         : AVVideoProfileLevelH264Main31,
                                             AVVideoH264EntropyModeKey      : AVVideoH264EntropyModeCABAC,
                                             AVVideoAverageBitRateKey       : self.videoBitRate,
@@ -124,7 +123,7 @@ RCT_REMAP_METHOD(startRecording, resolve:(RCTPromiseResolveBlock)resolve rejecte
     } else {
         // Fallback on earlier versions
     }
-    
+
     [self.writer addInput:self.micInput];
     [self.writer addInput:self.audioInput];
     [self.writer addInput:self.videoInput];
@@ -135,7 +134,7 @@ RCT_REMAP_METHOD(startRecording, resolve:(RCTPromiseResolveBlock)resolve rejecte
     if (self.enableMic) {
         self.screenRecorder.microphoneEnabled = YES;
     }
-    
+
     [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if (granted) {
@@ -148,9 +147,9 @@ RCT_REMAP_METHOD(startRecording, resolve:(RCTPromiseResolveBlock)resolve rejecte
                                 [self.writer startWriting];
                                 [self.writer startSessionAtSourceTime:CMSampleBufferGetPresentationTimeStamp(sampleBuffer)];
                             } else if (self.writer.status == AVAssetWriterStatusFailed) {
-                                
+
                             }
-                            
+
                             if (self.writer.status == AVAssetWriterStatusWriting) {
                                 switch (bufferType) {
                                     case RPSampleBufferTypeVideo:
@@ -210,10 +209,10 @@ RCT_REMAP_METHOD(stopRecording, resolver:(RCTPromiseResolveBlock)resolve rejecte
                     [self.micInput markAsFinished];
                     [self.videoInput markAsFinished];
                     [self.writer finishWritingWithCompletionHandler:^{
-                        
+
                         NSDictionary *result = [NSDictionary dictionaryWithObject:self.writer.outputURL.absoluteString forKey:@"outputURL"];
                         resolve([self successResponse:result]);
-                        
+
                         //                    UISaveVideoAtPathToSavedPhotosAlbum(self.writer.outputURL.absoluteString, nil, nil, nil);
                         NSLog(@"finishWritingWithCompletionHandler: Recording stopped successfully. Cleaning up... %@", result);
                         self.audioInput = nil;
