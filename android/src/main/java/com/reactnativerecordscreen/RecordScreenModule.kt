@@ -85,7 +85,11 @@ class RecordScreenModule(reactContext: ReactApplicationContext) : ReactContextBa
     hbRecorder!!.isAudioEnabled(mic);
     hbRecorder!!.setVideoBitrate(videoBitRate);
     hbRecorder!!.setVideoFrameRate(videoFrameRate);
-    hbRecorder!!.setVideoEncoder("H264");
+    if(doesSupportEncoder("h264")){
+      hbRecorder!!.setVideoEncoder("H264");
+    }else{
+      hbRecorder!!.setVideoEncoder("DEFAULT");
+    }
     hbRecorder!!.setOutputFormat("MPEG_4");
     hbRecorder!!.setScreenDimensions(screenHeight as Int, screenWidth as Int);
     reactApplicationContext.addActivityEventListener(mActivityEventListener);
