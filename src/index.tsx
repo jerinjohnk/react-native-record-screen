@@ -4,6 +4,9 @@ export type RecordingStartResponse = 'started';
 
 export type RecordScreenConfigType = {
   mic?: boolean;
+  videoBitRate?: number;
+  videoFrameRate?: number;
+  isLandscape?: boolean;
 };
 
 export type RecordingSuccessResponse = {

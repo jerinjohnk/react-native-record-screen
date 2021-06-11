@@ -24,6 +24,8 @@ class RecordScreenModule(reactContext: ReactApplicationContext) : ReactContextBa
   private var screenWidth: Number = 0;
   private var screenHeight: Number = 0;
   private var mic: Boolean = true;
+  private var videoBitRate: Int = 0;
+  private var videoFrameRate: Int = 0;
   private var currentVersion: String = "";
   private var outputUri: File? = null;
   private var startPromise: Promise? = null;
@@ -76,14 +78,15 @@ class RecordScreenModule(reactContext: ReactApplicationContext) : ReactContextBa
     screenWidth = if (readableMap.hasKey("width")) ceil(readableMap.getDouble("width")).toInt() else 0;
     screenHeight = if (readableMap.hasKey("height")) ceil(readableMap.getDouble("height")).toInt() else 0;
     mic =  if (readableMap.hasKey("mic")) readableMap.getBoolean("mic") else true;
+    videoBitRate =  if (readableMap.hasKey("videoBitRate")) ceil(readableMap.getDouble("videoBitRate")).toInt() else 1000*1000;
+    videoFrameRate = if (readableMap.hasKey("videoFrameRate")) ceil(readableMap.getDouble("videoFrameRate")).toInt() else 20;
     hbRecorder = HBRecorder(reactApplicationContext, this);
-    hbRecorder!!.setOutputPath(outputUri.toString());
-    if(doesSupportEncoder("h264")){
-      hbRecorder!!.setVideoEncoder("H264");
-    }else{
-      hbRecorder!!.setVideoEncoder("DEFAULT");
-    }
+    hbRecorder!!.enableCustomSettings();
     hbRecorder!!.isAudioEnabled(mic);
+    hbRecorder!!.setVideoBitrate(videoBitRate);
+    hbRecorder!!.setVideoFrameRate(videoFrameRate);
+    hbRecorder!!.setVideoEncoder("H264");
+    hbRecorder!!.setOutputFormat("MPEG_4");
     reactApplicationContext.addActivityEventListener(mActivityEventListener);
   }
 

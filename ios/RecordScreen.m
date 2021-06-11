@@ -8,8 +8,8 @@ const int DEFAULT_FPS = 30;
 - (NSDictionary *)errorResponse:(NSDictionary *)result;
 {
     NSDictionary *json = [NSDictionary dictionaryWithObjectsAndKeys:
-        @"error", @"status",
-        result, @"result",nil];
+                          @"error", @"status",
+                          result, @"result",nil];
     return json;
 
 }
@@ -17,8 +17,8 @@ const int DEFAULT_FPS = 30;
 - (NSDictionary *) successResponse:(NSDictionary *)result;
 {
     NSDictionary *json = [NSDictionary dictionaryWithObjectsAndKeys:
-        @"success", @"status",
-        result, @"result",nil];
+                          @"success", @"status",
+                          result, @"result",nil];
     return json;
 
 }
@@ -55,9 +55,23 @@ RCT_EXPORT_MODULE()
 
 RCT_EXPORT_METHOD(setup: (NSDictionary *)config)
 {
-    self.screenWidth = [RCTConvert int: config[@"width"]];
-    self.screenHeight = [RCTConvert int: config[@"height"]];
+    self.isLandscape = [RCTConvert BOOL: config[@"isLandscape"]];
+    self.screenWidth = self.isLandscape ?  [RCTConvert int: config[@"height"]] : [RCTConvert int: config[@"width"]];
+    self.screenHeight = self.isLandscape ? [RCTConvert int: config[@"width"]]: [RCTConvert int: config[@"height"]];
     self.enableMic = [RCTConvert BOOL: config[@"mic"]];
+    if ([config objectForKey:@"videoBitRate"]!=nil )
+    {
+        self.videoBitRate = [RCTConvert NSNumber: config[@"videoBitRate"]];
+    } else {
+        self.videoBitRate = @1000000;
+    }
+    if ([config objectForKey:@"videoFrameRate"]!=nil )
+    {
+        self.videoFrameRate = [RCTConvert NSNumber: config[@"videoFrameRate"]];
+    } else {
+        self.videoFrameRate = @20;
+    }
+
 }
 
 RCT_REMAP_METHOD(startRecording, resolve:(RCTPromiseResolveBlock)resolve rejecte:(RCTPromiseRejectBlock)reject)
@@ -88,15 +102,18 @@ RCT_REMAP_METHOD(startRecording, resolve:(RCTPromiseResolveBlock)resolve rejecte
     
     self.audioInput.preferredVolume = 0.0;
     self.micInput.preferredVolume = 0.0;
-    
-    NSDictionary *compressionProperties = @{AVVideoProfileLevelKey         : AVVideoProfileLevelH264HighAutoLevel,
-                                            AVVideoH264EntropyModeKey      : AVVideoH264EntropyModeCABAC,
-                                            AVVideoAverageBitRateKey       : @(1920 * 1080 * 114),
-                                            AVVideoMaxKeyFrameIntervalKey  : @60,
-                                            AVVideoAllowFrameReorderingKey : @NO};
 
     NSLog(@"width: %d", [self adjustMultipleOf2:self.screenWidth]);
     NSLog(@"height: %d", [self adjustMultipleOf2:self.screenHeight]);
+    NSLog(@"videoBitRate: %d", [self.videoBitRate intValue]);
+    NSLog(@"videoFrameRate: %d", [self.videoFrameRate intValue]);
+    
+    NSDictionary *compressionProperties = @{AVVideoProfileLevelKey         : AVVideoProfileLevelH264Main31,
+                                            AVVideoH264EntropyModeKey      : AVVideoH264EntropyModeCABAC,
+                                            AVVideoAverageBitRateKey       : self.videoBitRate,
+                                            AVVideoMaxKeyFrameIntervalKey  : self.videoFrameRate,
+                                            AVVideoAllowFrameReorderingKey : @NO};
+
     if (@available(iOS 11.0, *)) {
         NSDictionary *videoSettings = @{AVVideoCompressionPropertiesKey : compressionProperties,
                                         AVVideoCodecKey                 : AVVideoCodecTypeH264,
@@ -108,8 +125,8 @@ RCT_REMAP_METHOD(startRecording, resolve:(RCTPromiseResolveBlock)resolve rejecte
         // Fallback on earlier versions
     }
     
-    [self.writer addInput:self.audioInput];
     [self.writer addInput:self.micInput];
+    [self.writer addInput:self.audioInput];
     [self.writer addInput:self.videoInput];
     [self.videoInput setMediaTimeScale:60];
     [self.writer setMovieTimeScale:60];

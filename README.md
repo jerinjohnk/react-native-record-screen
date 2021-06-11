@@ -68,8 +68,13 @@ if (res) {
 default true.
 
 ```js
-// mic off
-RecordScreen.startRecording({ mic: false }).catch((error) =>
+// mic off, 
+RecordScreen.startRecording({ 
+      mic: false,  
+      videoBitRate: 1024 * 1024, // default value is 1000*1000
+      videoFrameRate: 24, // default value is 20
+      isLandscape: true, // for ios Landscape orientation screen
+  }).catch((error) =>
   console.error(error)
 );
 
@@ -92,6 +97,41 @@ RecordScreen.clean();
 
 The video cropping feature has been removed.
 Video crops will be created as another library.
+
+## Android device fix
+
+In some phones, such as Redmi, Vivo, etc., if the `Movies` folder doesn't exist, the video file is not saved. Since the library won't create the folder by itself, unlike Samsung for android, you can check if the folder exists before starting the screen record.
+
+```
+import RNFetchBlob from 'rn-fetch-blob';
+import { Platform } from 'react-native';
+
+const checkAndroidMoviesExist = () => {
+    if (Platform.OS === 'ios') {
+      return;
+    }
+
+    const {dirs} = RNFetchBlob.fs;
+    let pathToSave = `${dirs.SDCardDir}/Movies`;
+    pathToSave = pathToSave.replace(' ', '');
+
+    RNFetchBlob.fs
+      .exists(pathToSave)
+      .then((exist) => {
+        if (!exist) {
+          RNFetchBlob.fs
+            .mkdir(pathToSave)
+            .then(() => {
+              console.log('At mkdir', pathToSave);
+            })
+            .catch((err) => {
+              console.log('At mkdir error', pathToSave, err);
+            });
+        }
+      })
+      .catch((error) => {});
+  };
+```
 
 ## License
 
